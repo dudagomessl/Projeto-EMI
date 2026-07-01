@@ -1,0 +1,239 @@
+  @import url('https://fonts.cdnfonts.com/css/ica-rubrik-black');
+        @import url('https://fonts.cdnfonts.com/css/poppins');
+
+        :root {
+            --bg-color: #0d0d0d;
+            --text-color: #ffffff;
+            --primary-purple: #7b1fa2;
+            --system-blue: #00d4ff;
+            --neon-glow: 0 0 20px rgba(123, 31, 162, 0.6);
+            --chat-bg: rgba(15, 15, 15, 0.95);
+            --title-color: #1a1c29;
+            --table-row: rgba(255, 255, 255, 0.05);
+            --reflect-mask: linear-gradient(transparent, transparent, rgba(0, 0, 0, 0.5));
+            --sidebar-width: 250px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* --- SIDEBAR SISTEMA --- */
+        .sidebar {
+            position: fixed;
+            left: calc(var(--sidebar-width) * -1); /* Escondida inicialmente */
+            top: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 2px solid var(--primary-purple);
+            z-index: 2000;
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 40px 20px;
+        }
+
+        .sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(123, 31, 162, 0.3); }
+
+        .sidebar-header {
+            font-family: 'ICA Rubrik', sans-serif;
+            color: var(--system-blue);
+            font-size: 1.5rem;
+            margin-bottom: 50px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .sidebar-nav { display: flex; flex-direction: column; gap: 20px; }
+
+        .nav-item {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 0px solid var(--primary-purple);
+            transition: 0.3s;
+        }
+
+        .nav-item:hover {
+            background: rgba(123, 31, 162, 0.2);
+            border-left: 5px solid var(--primary-purple);
+            padding-left: 30px;
+            color: var(--system-blue);
+        }
+
+        /* Botão para abrir a sidebar */
+        .menu-btn {
+            position: fixed;
+            top: 25px;
+            left: 25px;
+            z-index: 2001;
+            background: var(--primary-purple);
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            box-shadow: var(--neon-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Carrosel / banner */
+        .banner {
+            width: 100%; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            perspective: 1500px; position: relative;
+            padding-bottom: 150px;
+        }
+
+        .slider {
+            position: absolute; width: 180px; height: 230px; top: 15%;
+            transform-style: preserve-3d; transform: rotateX(-16deg);
+            animation: autoRun 25s linear infinite; z-index: 2;
+        }
+
+        @keyframes autoRun {
+            from { transform: rotateX(-16deg) rotateY(0deg); }
+            to { transform: rotateX(-16deg) rotateY(360deg); }
+        }
+
+        .item { 
+            position: absolute; inset: 0; 
+            transform: rotateY(calc((var(--position) - 1) * 36deg)) translateZ(35vw);
+            -webkit-box-reflect: below 15px var(--reflect-mask);
+        }
+
+        .item img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; box-shadow: var(--neon-glow); }
+
+        .content {
+            position: absolute; bottom: 0; width: 100%; height: 100vh;
+            display: flex; flex-direction: column; justify-content: flex-end; align-items: center; 
+            z-index: 5; pointer-events: none;
+        }
+
+        .content h1 {
+            font-family: 'ICA Rubrik', sans-serif; font-size: 16vw;
+            color: var(--title-color); position: absolute; bottom: 12%; z-index: 1;
+        }
+
+        .tentei {
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    display: inline-block; /* Garante que o container envolva a imagem corretamente */
+     -webkit-box-reflect: below 15px var(--reflect-mask);
+}
+
+        .content .autor { 
+            position: absolute; right: 5%; bottom: 10%; text-align: right; 
+            z-index: 11; pointer-events: auto;
+        }
+        .content h2 { font-size: 4vw; color: var(--primary-purple); text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+
+        /* Tabela de status */
+        .Tabela-legal{
+            width: 100%; 
+            padding: 80px 20px; 
+            display: flex; 
+            justify-content: center;
+            background: var(--bg-color); 
+            position: relative; 
+            z-index: 20;
+        }
+
+        .Tabela-status {
+            width: 100%;
+            max-width: 800px; 
+            background: var(--chat-bg);
+            border: 2px solid var(--primary-purple); 
+            border-radius: 20px;
+            backdrop-filter: blur(15px); 
+            overflow: hidden; 
+            box-shadow: var(--neon-glow);
+        }
+
+        .Tabela-status th {
+            background: var(--primary-purple); 
+            color: white; 
+            padding: 20px;
+            font-family: 'ICA Rubrik', sans-serif; 
+            letter-spacing: 3px; text-align: left;
+        }
+
+        .Tabela-status td { 
+            padding: 15px 20px; 
+            border-bottom: 1px solid rgba(128,128,128,0.1); 
+        }
+
+        .Tabela-status tr:nth-child(even) { 
+            background: var(--table-row); 
+        }
+        .status-lab { 
+            color: var(--system-blue); 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            width: 35%; 
+            font-size: 0.8rem; }
+
+        /* --- CHAT HUD --- */
+        .chat-toggle {
+            position: fixed; right: 30px; bottom: 30px; width: 65px; height: 65px;
+            border-radius: 50%; background: var(--primary-purple); border: 2px solid white;
+            color: white; font-size: 28px; cursor: pointer; z-index: 100; box-shadow: var(--neon-glow);
+        }
+
+        .chat-container {
+            position: fixed; right: 30px; bottom: 110px; width: 350px; height: 480px;
+            background: var(--chat-bg); border: 1px solid var(--primary-purple);
+            border-radius: 20px; display: flex; flex-direction: column; z-index: 99; backdrop-filter: blur(10px);
+            transition: 0.4s;
+        }
+        .chat-container.hidden { opacity: 0; transform: translateY(20px) scale(0.9); pointer-events: none; }
+
+        .chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; max-width: 85%; }
+        .bot { background: rgba(128, 128, 128, 0.1); border-left: 3px solid var(--system-blue); align-self: flex-start; }
+        .user { background: var(--primary-purple); color: white; align-self: flex-end; }
+
+        .input-area { padding: 15px; display: flex; gap: 8px; border-top: 1px solid rgba(128, 128, 128, 0.1); }
+        .input-area input { flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(128, 128, 128, 0.2); color: white; padding: 10px; border-radius: 10px; outline: none; }
+        .send-btn { background: var(--primary-purple); border: none; color: white; padding: 10px 15px; border-radius: 10px; cursor: pointer; }
+
+        /* barra da lateral */
+
+        /* 1. Largura da barra */
+::-webkit-scrollbar {
+    width: 10px; /* Largura da barra vertical */
+    height: 10px; /* Altura da barra horizontal */
+}
+
+/* 2. O Fundo da barra (Track) */
+::-webkit-scrollbar-track {
+    background: rgba(20, 20, 20, 0.8); /* Um preto profundo para combinar com o tema */
+    border-radius: 10px;
+}
+
+/* 3. O "Ponteiro" que desliza (Thumb) */
+::-webkit-scrollbar-thumb {
+    background: var(--primary-purple); /* Usa sua variável roxa */
+    border-radius: 10px;
+    border: 2px solid rgba(20, 20, 20, 0.8); /* Cria um espaçamento visual */
+}
+
+/* 4. Efeito ao passar o mouse (Hover) */
+::-webkit-scrollbar-thumb:hover {
+    box-shadow: 0 0 10px var(--primary-purple); /* Adiciona um brilho neon */
+}

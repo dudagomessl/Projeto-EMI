@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium System Interface - v2 (Cyber Edition)</title>
+
+    <link href="https://fonts.cdnfonts.com/css/ica-rubrik-black" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/poppins" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Cores extraídas do seu CSS anterior */
+            --primary: #7b1fa2;
+            /* Roxo anterior */
+            --secondary: #00d4ff;
+            /* Azul system anterior */
+            --bg-dark: #0d0d0d;
+            --sidebar-width: 250px;
+            --transition-smooth: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            --neon-glow: 0 0 20px rgba(123, 31, 162, 0.6);
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(123, 31, 162, 0.3);
+
+            --thumb-width: 110px;
+            --thumb-height: 160px;
+            --thumb-gap: 15px;
+            --reflect-mask: linear-gradient(transparent, transparent, rgba(0, 0, 0, 0.5));
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            transition: var(--transition-smooth);
+        }
+
+        /* --- SIDEBAR (Estilo do CSS anterior) --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: calc(var(--sidebar-width) * -1);
+            width: var(--sidebar-width);
+            height: 100%;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            transition: var(--transition-smooth);
+            padding: 80px 20px;
+            border-right: 2px solid var(--primary);
+        }
+
+        body.sidebar-open .sidebar {
+            left: 0;
+            box-shadow: 10px 0 30px rgba(123, 31, 162, 0.3);
+        }
+
+        .sidebar-header {
+            font-family: 'ICA Rubrik', sans-serif;
+            color: var(--secondary);
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .nav-item {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 12px 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 0px solid var(--primary);
+            transition: 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: rgba(123, 31, 162, 0.2);
+            border-left: 5px solid var(--primary);
+            padding-left: 30px;
+            color: var(--secondary);
+        }
+
+        /* --- BOTÃO MENU NEON --- */
+        .menu-btn {
+            position: fixed;
+            top: 25px;
+            left: 25px;
+            z-index: 2000;
+            background: var(--primary);
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            box-shadow: var(--neon-glow);
+            font-size: 20px;
+        }
+
+        body.sidebar-open .menu-btn {
+            left: calc(var(--sidebar-width) + 25px);
+            transform: rotate(90deg);
+        }
+
+        /* --- CAROUSEL --- */
+        .carousel {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            flex-shrink: 0;
+            transition: var(--transition-smooth);
+            background: #000;
+        }
+
+        body.sidebar-open .carousel {
+            width: calc(100vw - var(--sidebar-width));
+            transform: translateX(var(--sidebar-width)) scale(0.98);
+            filter: brightness(0.4);
+        }
+
+        .carousel .list .item {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            display: flex;
+            align-items: center;
+        }
+
+        .carousel .list .item:nth-child(1) {
+            opacity: 1;
+            z-index: 10;
+        }
+
+        .carousel .list .item img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.5);
+            z-index: -1;
+        }
+
+        /* --- CONTEÚDO (Fontes anteriores) --- */
+        .content {
+            padding: 0 10%;
+            width: 100%;
+            z-index: 20;
+        }
+
+        .content .topic {
+            color: var(--secondary);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            letter-spacing: 5px;
+            margin-bottom: 10px;
+            opacity: 0;
+            text-transform: uppercase;
+        }
+
+        .content .title {
+            font-family: 'ICA Rubrik', sans-serif;
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 900;
+            line-height: 0.9;
+            color: white;
+            text-shadow: var(--neon-glow);
+            opacity: 0;
+        }
+
+        /* Animações sincronizadas */
+        .carousel .list .item:nth-child(1) .title {
+            animation: showText 0.8s 0.2s forwards;
+        }
+
+        .carousel .list .item:nth-child(1) .topic {
+            animation: showText 0.8s 0.4s forwards;
+        }
+
+        @keyframes showText {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+                filter: blur(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+                filter: blur(0);
+            }
+        }
+
+        /* --- MINIATURAS COM REFLEXO --- */
+        .thumbnail {
+            position: absolute;
+            bottom: 50px;
+            right: 50px;
+            display: flex;
+            gap: var(--thumb-gap);
+            z-index: 100;
+            width: calc((var(--thumb-width) * 3) + (var(--thumb-gap) * 2));
+        }
+
+        .thumbnail .item {
+            width: var(--thumb-width);
+            height: var(--thumb-height);
+            flex-shrink: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: 0.3s;
+            -webkit-box-reflect: below 10px var(--reflect-mask);
+        }
+
+        .thumbnail .item:hover {
+            border-color: var(--secondary);
+            box-shadow: 0 0 15px var(--secondary);
+            transform: translateY(-10px);
+        }
+
+        .thumbnail .item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* --- SETAS --- */
+        .arrows {
+            position: absolute;
+            bottom: 50px;
+            left: 10%;
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .arrows button {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            background: var(--primary);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: var(--neon-glow);
+        }
+
+        .arrows button:hover {
+            background: var(--secondary);
+            color: #000;
+            box-shadow: 0 0 20px var(--secondary);
+        }
+
+        /* Scrollbar customizada do CSS anterior */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(20, 20, 20, 0.8);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            box-shadow: 0 0 10px var(--primary);
+        }
+    </style>
+</head>
+
+<body id="main-body">
+
+    <button class="menu-btn" id="menu-btn">☰</button>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">SISTEMA</div>
+        <div class="sidebar-nav">
+            <a href="#" class="nav-item">DASHBOARD</a>
+            <a href="#" class="nav-item">MISSÕES</a>
+            <a href="#" class="nav-item">ARSENAL</a>
+            <a href="#" class="nav-item">PERFIL</a>
+        </div>
+    </nav>
+
+    <main class="carousel">
+        <div class="list">
+            <div class="item">
+                <img src="./img/1201330.jpg">
+                <div class="content">
+                    <div class="topic">MULTIVERSO</div>
+                    <div class="title">MILES<br>MORALES</div>
+                </div>
+            </div>
+            <div class="item">
+                <img src="./img/spiderman-1366x768-bwkfr9q68m75f8wz.jpg">
+                <div class="content">
+                    <div class="topic">ENERGIA</div>
+                    <div class="title">SENTIDO<br>ARANHA</div>
+                </div>
+            </div>
+            <div class="item">
+                <img src="./img/275112.jpg">
+                <div class="content">
+                    <div class="topic">LEGADO</div>
+                    <div class="title">PETER<br>PARKER</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="thumbnail"></div>
+
+        <div class="arrows">
+            <button id="prev">←</button>
+            <button id="next">→</button>
+        </div>
+    </main>
+
+    <script>
+        const body = document.getElementById('main-body');
+        const menuBtn = document.getElementById('menu-btn');
+        const nextBtn = document.getElementById('next');
+        const prevBtn = document.getElementById('prev');
+        const listHTML = document.querySelector('.list');
+        const thumbHTML = document.querySelector('.thumbnail');
+
+        // Toggle Sidebar
+        menuBtn.onclick = () => {
+            body.classList.toggle('sidebar-open');
+            menuBtn.innerText = body.classList.contains('sidebar-open') ? '✕' : '☰';
+        };
+
+        // Gerar miniaturas
+        const items = document.querySelectorAll('.list .item');
+        items.forEach((item, index) => {
+            const imgSrc = item.querySelector('img').src;
+            const thumb = document.createElement('div');
+            thumb.classList.add('item');
+            thumb.innerHTML = `<img src="${imgSrc}">`;
+            thumbHTML.appendChild(thumb);
+        });
+
+        // Lógica de Movimento
+        let isAnimating = false;
+
+        function showSlider(type) {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            const sliderItems = document.querySelectorAll('.list .item');
+            const thumbItems = document.querySelectorAll('.thumbnail .item');
+
+            if (type === 'next') {
+                listHTML.appendChild(sliderItems[0]);
+                thumbHTML.appendChild(thumbItems[0]);
+            } else {
+                listHTML.prepend(sliderItems[sliderItems.length - 1]);
+                thumbHTML.prepend(thumbItems[thumbItems.length - 1]);
+            }
+
+            setTimeout(() => { isAnimating = false; }, 800);
+        }
+
+        nextBtn.onclick = () => showSlider('next');
+        prevBtn.onclick = () => showSlider('prev');
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') showSlider('next');
+            if (e.key === 'ArrowLeft') showSlider('prev');
+        });
+    </script>
+</body>
+
+</html>
