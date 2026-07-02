@@ -1,0 +1,1 @@
+alter table usuarios add nota_media decimal(4,2)

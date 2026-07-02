@@ -19,7 +19,7 @@ public class Usuario {
     private Long id;
     private String nome;
     private String email;
-    //private double notaMedia;
+    private double notaMedia;
     private int nivelDaConta;
 
     @Enumerated(EnumType.STRING)
@@ -29,7 +29,7 @@ public class Usuario {
         this.nome = dados.nome();
         this.email = dados.email();
         this.nivelDaConta = dados.nivelDaConta();
-        //this.notaMedia = dados.notaMedia();
+        this.notaMedia = dados.notaMedia();
         this.materiaFavorita = dados.materiaFavorita();
     }
 

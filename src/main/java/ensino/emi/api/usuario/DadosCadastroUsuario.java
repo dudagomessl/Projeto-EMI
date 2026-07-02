@@ -12,8 +12,7 @@ public record DadosCadastroUsuario(
         String email,
         @NotNull
         int nivelDaConta,
-        //@NotNull
-        //double notaMedia,
+        double notaMedia,
         @NotNull
         MateriaFavorita materiaFavorita) {
 }
