@@ -26,6 +26,8 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     private MateriaFavorita materiaFavorita;
 
+    private Boolean ativo;
+
     public Usuario(DadosCadastroUsuario dados) {
         this.nome = dados.nome();
         this.email = dados.email();
@@ -48,6 +50,10 @@ public class Usuario {
         if (dados.materiaFavorita() != null) {
             this.materiaFavorita = dados.materiaFavorita();
         }
+    }
+
+    public void excluir() {
+        this.ativo = false;
     }
 
     //@Embedded private Endereco endereco
