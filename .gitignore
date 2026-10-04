@@ -4,6 +4,12 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### DEPENDENCIES ###
+.m2
+.claude
+.tmp
+.tools
+
 ### STS ###
 .apt_generated
 .classpath
