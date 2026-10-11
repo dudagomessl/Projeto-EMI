@@ -24,6 +24,27 @@ CREATE TABLE conquista (
     CONSTRAINT fk_conquista_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario) ON DELETE CASCADE
 );
 
+CREATE TABLE usuario_insignia (
+    id_usuario BIGINT NOT NULL,
+    id_insignia BIGINT NOT NULL,
+    data_conquista DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_usuario, id_insignia),
+    CONSTRAINT fk_usuario_insignia_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario) ON DELETE CASCADE,
+    CONSTRAINT fk_usuario_insignia_insignia FOREIGN KEY (id_insignia) REFERENCES insignia (id_insignia) ON DELETE CASCADE
+);
+
+CREATE TABLE usuario_missao (
+    id_usuario BIGINT NOT NULL,
+    id_missao BIGINT NOT NULL,
+    concluida BOOLEAN NOT NULL DEFAULT 0,
+    status VARCHAR(50),
+    data_atribuicao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    data_conquista DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_usuario, id_missao),
+    CONSTRAINT fk_usuario_missao_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario) ON DELETE CASCADE,
+    CONSTRAINT fk_usuario_missao_missao FOREIGN KEY (id_missao) REFERENCES missao (id_missao) ON DELETE CASCADE
+);
+
 CREATE TABLE cursa (
     id_usuario BIGINT NOT NULL,
     id_trilha BIGINT NOT NULL,

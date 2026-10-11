@@ -1,5 +1,6 @@
 package ensino.emi.api.domain.aula;
 
+import ensino.emi.api.domain.modulo.Modulo;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,11 +18,15 @@ public class Aula {
     @Column(name = "id_aula")
     private Long idAula;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_modulo", nullable = false)
+    private Modulo modulo;
+
     @Column(name = "nome_aula", nullable = false, length = 100)
     private String nomeAula;
 
     @Column(name = "status_de_conclusao", nullable = false)
-    private Integer statusDeConclusao;
+    private Integer statusDeConclusao = 0;
 
     @Column(name = "previa_do_conteudo", nullable = false, columnDefinition = "TEXT")
     private String previaDoConteudo;
