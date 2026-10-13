@@ -2,8 +2,13 @@ package ensino.emi.api.domain.desafio;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface DesafioRepository extends JpaRepository<Desafio, Long> {
-    Optional<Desafio> findByAulaIdAula(Long idAula);
+
+    List<Desafio> findByModuloIdModuloOrderByOrdemAsc(Long idModulo);
+
+    boolean existsByModuloIdModuloAndOrdem(Long idModulo, Integer ordem);
+
+    boolean existsByModuloIdModuloAndOrdemAndIdDesafioNot(Long idModulo, Integer ordem, Long idDesafio);
 }

@@ -1,67 +1,57 @@
 package ensino.emi.api.controller;
 
-import ensino.emi.api.domain.insignia.Insignia;
-import ensino.emi.api.domain.insignia.InsigniaRepository;
 import ensino.emi.api.domain.missao.*;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
 @RequestMapping("/missoes")
-@CrossOrigin(origins = "*")
 public class MissaoController {
 
-    private final MissaoRepository missaoRepository;
-    private final UsuarioMissaoRepository usuarioMissaoRepository;
-    private final InsigniaRepository insigniaRepository;
+    private final MissaoService missaoService;
 
-    public MissaoController(
-            MissaoRepository missaoRepository,
-            UsuarioMissaoRepository usuarioMissaoRepository,
-            InsigniaRepository insigniaRepository) {
-        this.missaoRepository = missaoRepository;
-        this.usuarioMissaoRepository = usuarioMissaoRepository;
-        this.insigniaRepository = insigniaRepository;
+    public MissaoController(MissaoService missaoService) {
+        this.missaoService = missaoService;
     }
 
-    // GET /missoes -> Listar todas as missões cadastradas
     @GetMapping
-    public ResponseEntity<List<Missao>> listarMissoes() {
-        return ResponseEntity.ok(missaoRepository.findAll());
+    public ResponseEntity<List<MissaoResponseDTO>> listar() {
+        return ResponseEntity.ok(missaoService.listar());
     }
 
-    // POST /missoes -> Criar uma nova missão
-    @PostMapping
-    public ResponseEntity<Missao> cadastrarMissao(@RequestBody MissaoDTO dados) {
-        Missao missao = new Missao();
-        missao.setTitulo(dados.titulo());
-        missao.setDescricao(dados.descricao());
-        missao.setRecompensaXp(dados.recompensaXp());
-
-        if (dados.idInsigniaRecompensa() != null) {
-            Insignia insignia = insigniaRepository.findById(dados.idInsigniaRecompensa())
-                    .orElseThrow(() -> new RuntimeException("Insígnia não encontrada"));
-            missao.setInsigniaRecompensa(insignia);
-        }
-
-        return ResponseEntity.ok(missaoRepository.save(missao));
+    @GetMapping("/{id}")
+    public ResponseEntity<MissaoResponseDTO> buscar(@PathVariable Long id) {
+        return ResponseEntity.ok(missaoService.buscar(id));
     }
 
-    // DELETE /missoes/{id} -> Excluir uma missão por ID
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarMissao(@PathVariable Long id) {
-        if (!missaoRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        missaoRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // GET /missoes/usuario/{idUsuario} -> Listar missões e status de progresso do usuário
+    /** Missões com o progresso do usuário (ex.: 3 de 5). */
     @GetMapping("/usuario/{idUsuario}")
-    public ResponseEntity<List<UsuarioMissao>> listarMissoesDoUsuario(@PathVariable Long idUsuario) {
-        return ResponseEntity.ok(usuarioMissaoRepository.findByUsuarioIdUsuario(idUsuario));
+    public ResponseEntity<List<MissaoProgressoDTO>> listarDoUsuario(@PathVariable Long idUsuario) {
+        return ResponseEntity.ok(missaoService.listarDoUsuario(idUsuario));
+    }
+
+    @PostMapping
+    public ResponseEntity<MissaoResponseDTO> cadastrar(@RequestBody @Valid MissaoDTO dados,
+                                                       UriComponentsBuilder uriBuilder) {
+        MissaoResponseDTO missao = missaoService.cadastrar(dados);
+        URI uri = uriBuilder.path("/missoes/{id}").buildAndExpand(missao.idMissao()).toUri();
+        return ResponseEntity.created(uri).body(missao);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<MissaoResponseDTO> atualizar(@PathVariable Long id,
+                                                       @RequestBody @Valid MissaoDTO dados) {
+        return ResponseEntity.ok(missaoService.atualizar(id, dados));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        missaoService.deletar(id);
+        return ResponseEntity.noContent().build();
     }
 }

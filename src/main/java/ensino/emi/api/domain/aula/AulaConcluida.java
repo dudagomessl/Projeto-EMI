@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class AulaConcluida {
 
@@ -28,6 +27,6 @@ public class AulaConcluida {
     @JoinColumn(name = "id_aula")
     private Aula aula;
 
-    @Column(name = "data_conclusao")
+    @Column(name = "data_conclusao", nullable = false)
     private LocalDateTime dataConclusao = LocalDateTime.now();
 }

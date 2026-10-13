@@ -8,7 +8,6 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(of = "idInsignia")
 public class Insignia {
 
@@ -27,6 +26,6 @@ public class Insignia {
     private String iconeUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "raridade", nullable = false)
+    @Column(nullable = false, length = 20)
     private RaridadeInsignia raridade;
 }

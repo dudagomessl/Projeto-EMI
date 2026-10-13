@@ -1,66 +1,60 @@
 package ensino.emi.api.controller;
 
-import ensino.emi.api.domain.aula.Aula;
-import ensino.emi.api.domain.aula.AulaDTO;
-import ensino.emi.api.domain.aula.AulaRepository;
-import ensino.emi.api.domain.aula.AulaService;
-import ensino.emi.api.domain.aula.AulaService.ResultadoConclusaoDTO;
-import ensino.emi.api.domain.modulo.Modulo;
-import ensino.emi.api.domain.modulo.ModuloRepository;
+import ensino.emi.api.domain.aula.*;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
 @RequestMapping("/aulas")
-@CrossOrigin(origins = "*")
 public class AulaController {
 
     private final AulaService aulaService;
-    private final AulaRepository aulaRepository;
-    private final ModuloRepository moduloRepository;
 
-    public AulaController(AulaService aulaService, AulaRepository aulaRepository, ModuloRepository moduloRepository) {
+    public AulaController(AulaService aulaService) {
         this.aulaService = aulaService;
-        this.aulaRepository = aulaRepository;
-        this.moduloRepository = moduloRepository;
     }
 
+    /** GET /aulas?idModulo=1 filtra pelo módulo (sem o texto completo). */
     @GetMapping
-    public ResponseEntity<List<Aula>> listarAulas() {
-        return ResponseEntity.ok(aulaRepository.findAll());
+    public ResponseEntity<List<AulaResumoDTO>> listar(@RequestParam(required = false) Long idModulo) {
+        return ResponseEntity.ok(aulaService.listar(idModulo));
+    }
+
+    /** Aula completa: texto + vídeo. */
+    @GetMapping("/{id}")
+    public ResponseEntity<AulaResponseDTO> buscar(@PathVariable Long id) {
+        return ResponseEntity.ok(aulaService.buscar(id));
     }
 
     @PostMapping
-    public ResponseEntity<Aula> cadastrarAula(@RequestBody AulaDTO dados) {
-        Modulo modulo = moduloRepository.findById(dados.idModulo())
-                .orElseThrow(() -> new RuntimeException("Módulo não encontrado"));
+    public ResponseEntity<AulaResponseDTO> cadastrar(@RequestBody @Valid AulaDTO dados,
+                                                     UriComponentsBuilder uriBuilder) {
+        AulaResponseDTO aula = aulaService.cadastrar(dados);
+        URI uri = uriBuilder.path("/aulas/{id}").buildAndExpand(aula.idAula()).toUri();
+        return ResponseEntity.created(uri).body(aula);
+    }
 
-        Aula aula = new Aula();
-        aula.setNomeAula(dados.nomeAula());
-        aula.setPreviaDoConteudo(dados.previaDoConteudo());
-        aula.setStatusDeConclusao(0);
-        aula.setModulo(modulo);
-
-        return ResponseEntity.ok(aulaRepository.save(aula));
+    @PutMapping("/{id}")
+    public ResponseEntity<AulaResponseDTO> atualizar(@PathVariable Long id,
+                                                     @RequestBody @Valid AulaDTO dados) {
+        return ResponseEntity.ok(aulaService.atualizar(id, dados));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarAula(@PathVariable Long id) {
-        if (!aulaRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        aulaRepository.deleteById(id);
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        aulaService.deletar(id);
         return ResponseEntity.noContent().build();
     }
 
+    // TEMPORÁRIO: idUsuario deve vir do token quando a autenticação existir
     @PostMapping("/{idAula}/concluir")
-    public ResponseEntity<ResultadoConclusaoDTO> concluirAula(
-            @PathVariable Long idAula,
-            @RequestParam Long idUsuario) {
-
-        ResultadoConclusaoDTO resultado = aulaService.concluirAula(idUsuario, idAula);
-        return ResponseEntity.ok(resultado);
+    public ResponseEntity<ResultadoConclusaoDTO> concluir(@PathVariable Long idAula,
+                                                          @RequestParam Long idUsuario) {
+        return ResponseEntity.ok(aulaService.concluirAula(idUsuario, idAula));
     }
 }

@@ -1,67 +1,119 @@
 package ensino.emi.api.domain.usuario;
 
 import ensino.emi.api.domain.chat.SessaoChat;
-import ensino.emi.api.domain.chat.SessaoChatRepository;
+import ensino.emi.api.domain.insignia.InsigniaResponseDTO;
+import ensino.emi.api.infra.exception.ConflitoException;
+import ensino.emi.api.infra.exception.CredenciaisInvalidasException;
+import ensino.emi.api.infra.exception.RecursoNaoEncontradoException;
+import org.springframework.data.domain.Sort;
+//import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class UsuarioService {
 
+//    private final UsuarioRepository usuarioRepository;
+//    private final UsuarioInsigniaRepository usuarioInsigniaRepository;
+//    private final PasswordEncoder passwordEncoder;
+//
+//    public UsuarioService(UsuarioRepository usuarioRepository,
+//                          UsuarioInsigniaRepository usuarioInsigniaRepository,
+//                          PasswordEncoder passwordEncoder) {
+//        this.usuarioRepository = usuarioRepository;
+//        this.usuarioInsigniaRepository = usuarioInsigniaRepository;
+//        this.passwordEncoder = passwordEncoder;
+//    }
+
     private final UsuarioRepository usuarioRepository;
-    private final SessaoChatRepository sessaoChatRepository;
+    private final UsuarioInsigniaRepository usuarioInsigniaRepository;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, SessaoChatRepository sessaoChatRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository,
+                          UsuarioInsigniaRepository usuarioInsigniaRepository) {
         this.usuarioRepository = usuarioRepository;
-        this.sessaoChatRepository = sessaoChatRepository;
+        this.usuarioInsigniaRepository = usuarioInsigniaRepository;
     }
 
     @Transactional
-    public Usuario cadastrarUsuario(UsuarioDTO dados) {
-        // Cria a sessão de chat padrão para o novo aluno
-        SessaoChat sessao = new SessaoChat();
-        sessao.setPromptChat("Você é a Mei, uma tutora de ensino médio gamificada, amigável e didática.");
-        sessaoChatRepository.save(sessao);
-
-        // Cria o usuário vinculado à sessão
-        Usuario usuario = new Usuario();
-        usuario.setNomeUsuario(dados.nomeUsuario());
-        usuario.setEmail(dados.email());
-        usuario.setSenha(dados.senha()); // Em produção usaria encoder, mas para testes pode ser texto puro
-        usuario.setDataNascimento(dados.dataNascimento());
-        usuario.setExperiencia(0);
-        usuario.setSessaoChat(sessao);
-
-        return usuarioRepository.save(usuario);
-    }
-
-    public Usuario buscarPorId(Long id) {
-        return usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado!"));
-    }
-
-    @Transactional
-    public void deletarUsuario(Long id) {
-        if (!usuarioRepository.existsById(id)) {
-            throw new RuntimeException("Usuário não encontrado para exclusão.");
+    public UsuarioResponseDTO cadastrar(UsuarioDTO dados) {
+        String email = normalizarEmail(dados.email());
+        if (usuarioRepository.existsByEmail(email)) {
+            throw new ConflitoException("E-mail já cadastrado.");
         }
-        usuarioRepository.deleteById(id);
+
+        Usuario usuario = new Usuario();
+        usuario.setNomeUsuario(dados.nomeUsuario().trim());
+        usuario.setEmail(email);
+        //usuario.setSenha(passwordEncoder.encode(dados.senha()));
+        usuario.setSenha(dados.senha());
+        usuario.setDataNascimento(dados.dataNascimento());
+        usuario.setSessaoChat(SessaoChat.criarPadrao());   // salva junto (cascade)
+
+        return UsuarioResponseDTO.de(usuarioRepository.save(usuario));
     }
 
-    public List<DadosListagemUsuario> listar() {
-        List<Usuario> usuarios = usuarioRepository.findAll();
+    /**
+     * Login provisório: confere e-mail/senha e devolve o perfil. Será trocado por JWT.
+     */
+    public UsuarioResponseDTO autenticar(LoginDTO dados) {
+        Usuario usuario = usuarioRepository.findByEmail(normalizarEmail(dados.email()))
+                .orElseThrow(CredenciaisInvalidasException::new);
 
-        return usuarios.stream()
-                .map(usuario -> new DadosListagemUsuario(
-                        usuario.getIdUsuario(),
-                        usuario.getNomeUsuario(),
-                        usuario.getEmail(),
-                        usuario.getDataNascimento(),
-                        usuario.getExperiencia() // ajuste conforme os campos reais do seu DTO
-                ))
-                .collect(Collectors.toList());
+//        if (!passwordEncoder.matches(dados.senha(), usuario.getSenha())) {
+//            throw new CredenciaisInvalidasException();
+//        }
+        if (!dados.senha().equals(usuario.getSenha())) {
+            throw new CredenciaisInvalidasException();
+        }
+        return UsuarioResponseDTO.de(usuario);
+    }
+
+    public UsuarioResponseDTO buscar(Long id) {
+        return UsuarioResponseDTO.de(buscarEntidade(id));
+    }
+
+    /**
+     * Lista pública ordenada por XP (serve como ranking).
+     */
+    public List<UsuarioResumoDTO> listar() {
+        return usuarioRepository.findAll(Sort.by(Sort.Direction.DESC, "experiencia"))
+                .stream()
+                .map(UsuarioResumoDTO::de)
+                .toList();
+    }
+
+    @Transactional
+    public UsuarioResponseDTO atualizar(Long id, UsuarioAtualizacaoDTO dados) {
+        Usuario usuario = buscarEntidade(id);
+        usuario.setNomeUsuario(dados.nomeUsuario().trim());
+        usuario.setDataNascimento(dados.dataNascimento());
+        return UsuarioResponseDTO.de(usuario);
+    }
+
+    @Transactional
+    public void deletar(Long id) {
+        usuarioRepository.delete(buscarEntidade(id));
+    }
+
+    public List<InsigniaResponseDTO> listarInsignias(Long idUsuario) {
+        if (!usuarioRepository.existsById(idUsuario)) {
+            throw new RecursoNaoEncontradoException("Usuário", idUsuario);
+        }
+        return usuarioInsigniaRepository.findInsigniasPorUsuario(idUsuario)
+                .stream()
+                .map(InsigniaResponseDTO::de)
+                .toList();
+    }
+
+    private Usuario buscarEntidade(Long id) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário", id));
+    }
+
+    private String normalizarEmail(String email) {
+        return email.trim().toLowerCase();
     }
 }

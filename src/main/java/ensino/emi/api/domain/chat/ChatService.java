@@ -2,113 +2,89 @@ package ensino.emi.api.domain.chat;
 
 import ensino.emi.api.domain.usuario.Usuario;
 import ensino.emi.api.domain.usuario.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Value;
+import ensino.emi.api.infra.exception.RecursoNaoEncontradoException;
+import ensino.emi.api.infra.gemini.GeminiClient;
+import ensino.emi.api.infra.gemini.Turno;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * Propositalmente SEM @Transactional na classe: a chamada HTTP ao Gemini pode levar segundos
+ * e não deve manter uma conexão do banco aberta. Cada acesso ao banco abre a sua própria transação.
+ */
 @Service
 public class ChatService {
 
-    @Value("${gemini.api.key}")
-    private String apiKey;
+    /** Quantas mensagens anteriores são reenviadas ao Gemini a cada pergunta. */
+    private static final int MAX_MENSAGENS_CONTEXTO = 20;
+    private static final int MAX_MENSAGENS_HISTORICO = 50;
 
-    private final SessaoChatRepository sessaoChatRepository;
-    private final MensagemChatRepository mensagemChatRepository;
     private final UsuarioRepository usuarioRepository;
-    private final RestClient restClient;
+    private final MensagemChatRepository mensagemChatRepository;
+    private final GeminiClient geminiClient;
 
-    public ChatService(SessaoChatRepository sessaoChatRepository,
+    public ChatService(UsuarioRepository usuarioRepository,
                        MensagemChatRepository mensagemChatRepository,
-                       UsuarioRepository usuarioRepository) {
-        this.sessaoChatRepository = sessaoChatRepository;
-        this.mensagemChatRepository = mensagemChatRepository;
+                       GeminiClient geminiClient) {
         this.usuarioRepository = usuarioRepository;
-        this.restClient = RestClient.create();
+        this.mensagemChatRepository = mensagemChatRepository;
+        this.geminiClient = geminiClient;
     }
 
-    @Transactional
-    public RespostaChatDTO processarMensagem(Long idChat, String mensagemAluno) {
-        SessaoChat sessao = sessaoChatRepository.findById(idChat)
-                .orElseThrow(() -> new RuntimeException("Sessão de Chat não encontrada!"));
+    public RespostaChatDTO enviarMensagem(Long idUsuario, String textoAluno) {
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário", idUsuario));
+        SessaoChat sessao = buscarSessao(idUsuario);
 
-        List<MensagemChat> historico = mensagemChatRepository.findBySessaoChatOrderByIdMensagemAsc(sessao);
+        List<Turno> conversa = montarConversa(sessao.getIdChat(), textoAluno);
+        String respostaTutora = geminiClient.gerarResposta(sessao.getPromptChat(), conversa);
 
-        StringBuilder conversaCompleta = new StringBuilder();
+        // Só salva depois que o Gemini respondeu: se falhar, o histórico não fica "torto"
+        mensagemChatRepository.saveAll(List.of(
+                MensagemChat.builder().sessaoChat(sessao).remetente(Remetente.ALUNO).mensagem(textoAluno).build(),
+                MensagemChat.builder().sessaoChat(sessao).remetente(Remetente.TUTORA).mensagem(respostaTutora).build()
+        ));
 
-        if (historico.isEmpty()) {
-            conversaCompleta.append(sessao.getPromptChat())
-                    .append("\n\n [INICIO DA SESSÃO] Pergunta do Aluno: ")
-                    .append(mensagemAluno);
-        } else {
-            for (MensagemChat msg : historico) {
-                if ("ALUNO".equalsIgnoreCase(msg.getRemetente())) {
-                    conversaCompleta.append("\nAluno: ").append(msg.getMensagem());
-                } else {
-                    conversaCompleta.append("\nTutora: ").append(msg.getMensagem());
-                }
-            }
-            conversaCompleta.append("\nAluno: ").append(mensagemAluno);
+        return new RespostaChatDTO(respostaTutora, usuario.getExperiencia(),
+                usuario.getXpNoNivelAtual(), usuario.getNivelAtual());
+    }
+
+    /** Últimas mensagens da conversa, em ordem cronológica (para reabrir o chat no front). */
+    public List<MensagemChatDTO> historico(Long idUsuario) {
+        SessaoChat sessao = buscarSessao(idUsuario);
+        List<MensagemChat> mensagens = new ArrayList<>(
+                mensagemChatRepository.findBySessaoChatIdChatOrderByIdMensagemDesc(
+                        sessao.getIdChat(), PageRequest.of(0, MAX_MENSAGENS_HISTORICO)));
+        Collections.reverse(mensagens);
+        return mensagens.stream().map(MensagemChatDTO::de).toList();
+    }
+
+    private SessaoChat buscarSessao(Long idUsuario) {
+        return usuarioRepository.buscarSessaoChat(idUsuario)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Sessão de chat do usuário", idUsuario));
+    }
+
+    private List<Turno> montarConversa(Long idChat, String textoAluno) {
+        List<MensagemChat> recentes = new ArrayList<>(
+                mensagemChatRepository.findBySessaoChatIdChatOrderByIdMensagemDesc(
+                        idChat, PageRequest.of(0, MAX_MENSAGENS_CONTEXTO)));
+        Collections.reverse(recentes);
+
+        // O contexto cortado precisa começar numa fala do aluno
+        while (!recentes.isEmpty() && recentes.get(0).getRemetente() == Remetente.TUTORA) {
+            recentes.remove(0);
         }
 
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
-
-        var requestBody = Map.of(
-                "contents", List.of(
-                        Map.of("parts", List.of(Map.of("text", conversaCompleta.toString())))
-                )
-        );
-
-        Map response = restClient.post()
-                .uri(url)
-                .body(requestBody)
-                .retrieve()
-                .body(Map.class);
-
-        String respostaTutora = extrairTextoResposta(response);
-
-        MensagemChat msgAluno = MensagemChat.builder()
-                .sessaoChat(sessao)
-                .remetente("ALUNO")
-                .mensagem(mensagemAluno)
-                .build();
-
-        MensagemChat msgTutora = MensagemChat.builder()
-                .sessaoChat(sessao)
-                .remetente("TUTORA")
-                .mensagem(respostaTutora)
-                .build();
-
-        mensagemChatRepository.save(msgAluno);
-        mensagemChatRepository.save(msgTutora);
-
-        Usuario usuario = usuarioRepository.findBySessaoChatIdChat(idChat).orElse(null);
-
-        return new RespostaChatDTO(
-                respostaTutora,
-                usuario != null ? usuario.getExperiencia() : 0,
-                usuario != null ? usuario.getXpNoNivelAtual() : 0,
-                usuario != null ? usuario.getNivelAtual() : 1
-        );
-    }
-
-    @SuppressWarnings("unchecked")
-    private String extrairTextoResposta(Map response) {
-        try {
-            List candidates = (List) response.get("candidates");
-            Map firstCandidate = (Map) candidates.get(0);
-            Map content = (Map) firstCandidate.get("content");
-            List parts = (List) content.get("parts");
-            Map firstPart = (Map) parts.get(0);
-            return (String) firstPart.get("text");
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao processar resposta do Gemini", e);
+        List<Turno> turnos = new ArrayList<>();
+        for (MensagemChat m : recentes) {
+            Turno.Papel papel = m.getRemetente() == Remetente.ALUNO ? Turno.Papel.USUARIO : Turno.Papel.MODELO;
+            turnos.add(new Turno(papel, m.getMensagem()));
         }
-    }
-
-    public record RespostaChatDTO(String resposta, Integer xpTotal, Integer xpAtualNivel, Integer nivelAtual) {
+        turnos.add(new Turno(Turno.Papel.USUARIO, textoAluno));
+        return turnos;
     }
 }

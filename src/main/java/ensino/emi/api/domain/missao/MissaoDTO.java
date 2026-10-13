@@ -1,9 +1,14 @@
 package ensino.emi.api.domain.missao;
 
+import jakarta.validation.constraints.*;
+
 public record MissaoDTO(
-        String titulo, // Se no JSON do Insomnia você manda "titulo"
-        String descricao,
-        Integer recompensaXp,
-        Long idInsigniaRecompensa
+        @NotBlank @Size(max = 100) String titulo,
+        @NotBlank @Size(max = 1000) String descricao,
+        @NotNull TipoMissao tipo,
+        @NotNull @Min(1) Integer meta,
+        Long idModulo,                 // opcional
+        @NotNull @Min(0) Integer recompensaXp,
+        Long idInsigniaRecompensa      // opcional
 ) {
 }

@@ -1,6 +1,7 @@
 package ensino.emi.api.domain.missao;
 
 import ensino.emi.api.domain.insignia.Insignia;
+import ensino.emi.api.domain.modulo.Modulo;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,7 +10,6 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(of = "idMissao")
 public class Missao {
 
@@ -18,16 +18,29 @@ public class Missao {
     @Column(name = "id_missao")
     private Long idMissao;
 
-    @Column(name = "nome_missao", nullable = false, length = 100)
+    @Column(nullable = false, length = 100)
     private String titulo;
 
-    @Column(name = "descricao_missao", columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String descricao;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private TipoMissao tipo;
+
+    /** Quantidade necessária para cumprir a missão (ex.: 5 aulas). */
+    @Column(nullable = false)
+    private Integer meta;
+
+    /** Opcional: restringe a contagem a um módulo. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_modulo")
+    private Modulo modulo;
 
     @Column(name = "recompensa_xp", nullable = false)
     private Integer recompensaXp;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_insignia_recompensa", nullable = true)
+    @JoinColumn(name = "id_insignia_recompensa")
     private Insignia insigniaRecompensa;
 }

@@ -11,11 +11,11 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
+@EqualsAndHashCode(of = "id")
 public class UsuarioInsignia {
 
     @EmbeddedId
-    private UsuarioInsigniaId id = new UsuarioInsigniaId();
+    private UsuarioInsigniaId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("idUsuario")

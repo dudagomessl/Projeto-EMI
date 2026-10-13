@@ -1,6 +1,6 @@
 package ensino.emi.api.domain.desafio;
 
-import ensino.emi.api.domain.aula.Aula;
+import ensino.emi.api.domain.modulo.Modulo;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,7 +9,6 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(of = "idDesafio")
 public class Desafio {
 
@@ -18,27 +17,21 @@ public class Desafio {
     @Column(name = "id_desafio")
     private Long idDesafio;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_aula", nullable = false, unique = true)
-    private Aula aula;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_modulo", nullable = false)
+    private Modulo modulo;
 
     @Column(name = "nome_desafio", nullable = false, length = 100)
     private String nomeDesafio;
 
-    @Column(name = "prompt_desafio", nullable = false, columnDefinition = "TEXT")
-    private String promptDesafio;
-
-    @Column(name = "pergunta_enunciado", nullable = false, columnDefinition = "TEXT")
-    private String perguntaEnunciado;
-
-    @Column(name = "resposta_correta", nullable = false, length = 255)
-    private String respostaCorreta; // Gabarito para validação automática
+    /** Percentual mínimo de acertos (0 a 100) para ser aprovado. */
+    @Column(name = "nota_de_corte", nullable = false)
+    private Integer notaDeCorte;
 
     @Column(name = "recompensa_xp", nullable = false)
     private Integer recompensaXp;
 
-    @Column(name = "nota_de_corte", nullable = false)
-    private Integer notaDeCorte;
-
-
+    /** Posição na linha do módulo (compartilhada com as aulas). */
+    @Column(nullable = false)
+    private Integer ordem;
 }

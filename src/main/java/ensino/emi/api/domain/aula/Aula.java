@@ -9,7 +9,6 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(of = "idAula")
 public class Aula {
 
@@ -18,16 +17,25 @@ public class Aula {
     @Column(name = "id_aula")
     private Long idAula;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_modulo", nullable = false)
     private Modulo modulo;
 
     @Column(name = "nome_aula", nullable = false, length = 100)
     private String nomeAula;
 
-    @Column(name = "status_de_conclusao", nullable = false)
-    private Integer statusDeConclusao = 0;
-
-    @Column(name = "previa_do_conteudo", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "previa_do_conteudo", nullable = false, length = 500)
     private String previaDoConteudo;
+
+    /** Texto completo da aula. */
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String texto;
+
+    /** Link do vídeo (ex.: YouTube). Opcional. */
+    @Column(name = "video_url", length = 255)
+    private String videoUrl;
+
+    /** Posição na linha do módulo (compartilhada com os desafios). */
+    @Column(nullable = false)
+    private Integer ordem;
 }

@@ -1,5 +1,0 @@
-CREATE TABLE sessao_chat (
-    id_chat BIGINT PRIMARY KEY AUTO_INCREMENT,
-    prompt_chat TEXT NOT NULL,
-    data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
-);

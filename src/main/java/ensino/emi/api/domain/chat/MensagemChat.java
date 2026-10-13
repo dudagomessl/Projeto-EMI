@@ -20,16 +20,19 @@ public class MensagemChat {
     @Column(name = "id_mensagem")
     private Long idMensagem;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_chat")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_chat", nullable = false)
     private SessaoChat sessaoChat;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String remetente;
+    private Remetente remetente;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String mensagem;
 
-    @Column(name = "data_envio")
+    // @Builder.Default é obrigatório: sem ele o builder ignora o valor inicial e grava NULL
+    @Builder.Default
+    @Column(name = "data_envio", nullable = false)
     private LocalDateTime dataEnvio = LocalDateTime.now();
 }

@@ -9,6 +9,7 @@ import java.util.List;
 
 public interface UsuarioInsigniaRepository extends JpaRepository<UsuarioInsignia, UsuarioInsigniaId> {
 
-    @Query("SELECT ui.insignia FROM UsuarioInsignia ui WHERE ui.usuario.idUsuario = :idUsuario")
+    @Query("select ui.insignia from UsuarioInsignia ui "
+            + "where ui.usuario.idUsuario = :idUsuario order by ui.dataConquista desc")
     List<Insignia> findInsigniasPorUsuario(@Param("idUsuario") Long idUsuario);
 }

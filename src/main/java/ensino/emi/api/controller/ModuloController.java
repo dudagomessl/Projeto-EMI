@@ -1,54 +1,62 @@
 package ensino.emi.api.controller;
 
-import ensino.emi.api.domain.modulo.Modulo;
-import ensino.emi.api.domain.modulo.ModuloRepository;
-import ensino.emi.api.domain.trilha.Trilha;
-import ensino.emi.api.domain.trilha.TrilhaRepository;
+import ensino.emi.api.domain.modulo.ItemProgressoDTO;
+import ensino.emi.api.domain.modulo.ModuloDTO;
+import ensino.emi.api.domain.modulo.ModuloResponseDTO;
+import ensino.emi.api.domain.modulo.ModuloService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
 @RequestMapping("/modulos")
-@CrossOrigin(origins = "*")
 public class ModuloController {
 
-    private final ModuloRepository moduloRepository;
-    private final TrilhaRepository trilhaRepository;
+    private final ModuloService moduloService;
 
-    public ModuloController(ModuloRepository moduloRepository, TrilhaRepository trilhaRepository) {
-        this.moduloRepository = moduloRepository;
-        this.trilhaRepository = trilhaRepository;
+    public ModuloController(ModuloService moduloService) {
+        this.moduloService = moduloService;
     }
 
+    /** GET /modulos?idTrilha=1 filtra pela trilha; sem parâmetro lista todos. */
     @GetMapping
-    public ResponseEntity<List<Modulo>> listarModulos() {
-        return ResponseEntity.ok(moduloRepository.findAll());
+    public ResponseEntity<List<ModuloResponseDTO>> listar(@RequestParam(required = false) Long idTrilha) {
+        return ResponseEntity.ok(moduloService.listar(idTrilha));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ModuloResponseDTO> buscar(@PathVariable Long id) {
+        return ResponseEntity.ok(moduloService.buscar(id));
+    }
+
+    /** Linha do módulo (aulas + desafios) com concluído/liberado para o usuário. */
+    @GetMapping("/{id}/progresso")
+    public ResponseEntity<List<ItemProgressoDTO>> progresso(@PathVariable Long id,
+                                                            @RequestParam Long idUsuario) {   // TEMPORÁRIO: virá do token
+        return ResponseEntity.ok(moduloService.progresso(id, idUsuario));
     }
 
     @PostMapping
-    public ResponseEntity<Modulo> cadastrarModulo(@RequestBody ModuloDTO dados) {
-        Trilha trilha = trilhaRepository.findById(dados.idTrilha())
-                .orElseThrow(() -> new RuntimeException("Trilha não encontrada"));
+    public ResponseEntity<ModuloResponseDTO> cadastrar(@RequestBody @Valid ModuloDTO dados,
+                                                       UriComponentsBuilder uriBuilder) {
+        ModuloResponseDTO modulo = moduloService.cadastrar(dados);
+        URI uri = uriBuilder.path("/modulos/{id}").buildAndExpand(modulo.idModulo()).toUri();
+        return ResponseEntity.created(uri).body(modulo);
+    }
 
-        Modulo modulo = new Modulo();
-        modulo.setNomeModulo(dados.nomeModulo());
-        modulo.setDescricao(dados.descricao());
-        modulo.setTrilha(trilha);
-
-        return ResponseEntity.ok(moduloRepository.save(modulo));
+    @PutMapping("/{id}")
+    public ResponseEntity<ModuloResponseDTO> atualizar(@PathVariable Long id,
+                                                       @RequestBody @Valid ModuloDTO dados) {
+        return ResponseEntity.ok(moduloService.atualizar(id, dados));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarModulo(@PathVariable Long id) {
-        if (!moduloRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        moduloRepository.deleteById(id);
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        moduloService.deletar(id);
         return ResponseEntity.noContent().build();
-    }
-
-    public record ModuloDTO(String nomeModulo, String descricao, Long idTrilha) {
     }
 }

@@ -1,39 +1,53 @@
 package ensino.emi.api.controller;
 
-import ensino.emi.api.domain.trilha.Trilha;
-import ensino.emi.api.domain.trilha.TrilhaRepository;
+import ensino.emi.api.domain.trilha.TrilhaDTO;
+import ensino.emi.api.domain.trilha.TrilhaResponseDTO;
+import ensino.emi.api.domain.trilha.TrilhaService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
 @RequestMapping("/trilhas")
-@CrossOrigin(origins = "*")
 public class TrilhaController {
 
-    private final TrilhaRepository trilhaRepository;
+    private final TrilhaService trilhaService;
 
-    public TrilhaController(TrilhaRepository trilhaRepository) {
-        this.trilhaRepository = trilhaRepository;
+    public TrilhaController(TrilhaService trilhaService) {
+        this.trilhaService = trilhaService;
     }
 
     @GetMapping
-    public ResponseEntity<List<Trilha>> listarTrilhas() {
-        return ResponseEntity.ok(trilhaRepository.findAll());
+    public ResponseEntity<List<TrilhaResponseDTO>> listar() {
+        return ResponseEntity.ok(trilhaService.listar());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<TrilhaResponseDTO> buscar(@PathVariable Long id) {
+        return ResponseEntity.ok(trilhaService.buscar(id));
     }
 
     @PostMapping
-    public ResponseEntity<Trilha> cadastrarTrilha(@RequestBody Trilha trilha) {
-        return ResponseEntity.ok(trilhaRepository.save(trilha));
+    public ResponseEntity<TrilhaResponseDTO> cadastrar(@RequestBody @Valid TrilhaDTO dados,
+                                                       UriComponentsBuilder uriBuilder) {
+        TrilhaResponseDTO trilha = trilhaService.cadastrar(dados);
+        URI uri = uriBuilder.path("/trilhas/{id}").buildAndExpand(trilha.idTrilha()).toUri();
+        return ResponseEntity.created(uri).body(trilha);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TrilhaResponseDTO> atualizar(@PathVariable Long id,
+                                                       @RequestBody @Valid TrilhaDTO dados) {
+        return ResponseEntity.ok(trilhaService.atualizar(id, dados));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarTrilha(@PathVariable Long id) {
-        if (!trilhaRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        trilhaRepository.deleteById(id);
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        trilhaService.deletar(id);
         return ResponseEntity.noContent().build();
     }
 }
